@@ -1,6 +1,7 @@
 module Parser where
 
-import           Data.List (isPrefixOf)
+import           Data.Functor (($>))
+import           Data.List    (isPrefixOf)
 
 newtype Parser a = Parser { unParser :: String -> [(String, a)]}
 
@@ -39,8 +40,21 @@ prefixP str = Parser p
                   else []
 
 skipString :: String -> Parser ()
-skipString str = Parser p
+skipString str = prefixP str $> ()
+
+--class Functor f where
+--  fmap :: (a -> b) -> f a -> f b
+instance Functor Parser where
+    --fmap :: (a -> b) -> Parser a -> Parser b
+    fmap f (Parser va) = Parser vb
+        where
+            --f :: a -> b
+            --va :: String -> [(String, a)]
+            --vb :: String -> [(String, b)]
+            vb input = map (\(s, x) -> (s, f x)) (va input)
+
+applyP :: Parser (b -> c) -> Parser b -> Parser c
+applyP (Parser bc) (Parser b) = Parser c
     where
-        p input = if str `isPrefixOf` input
-                  then [(drop (length str) input, ())]
-                  else []
+        c input = [(input'', f x) | (input', f) <- bc input,
+                                    (input'', x) <- b input']
